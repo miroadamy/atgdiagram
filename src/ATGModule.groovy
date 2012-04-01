@@ -13,7 +13,7 @@ class ATGModule {
   String atgConfigPath
   List<String> dependsOn
 
-  public ATGModule (String name, List<String> manifestLines) {
+  public ATGModule (String name, List<String> manifestLines, boolean debug = false) {
     moduleName = name
 
     // process manifest lines
@@ -32,6 +32,9 @@ class ATGModule {
           break;
 
       }
+
+      if (debug)
+        println "MF-> (${line})"
 
     }
   }

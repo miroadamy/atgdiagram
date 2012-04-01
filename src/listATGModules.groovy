@@ -77,15 +77,28 @@ def processATGModule(String rootPath, String parentPath, String modulePath, modu
     // got the module
     // load the Manifest file
     def lines = []
+    def hasATGContent = false
+    def fullLine = ""
+
+    // TODO: process each line - if starts with space, concat with previous line (remove space)
+    // ATG manifests contains broken lines
     f.readLines().each() { line ->
       if (line.startsWith("ATG-"))
-        lines.add(line)
+        hasATGContent = true
+      if (line.size() > 0 && line[0] == ' ' && fullLine.size() > 0) {  // this is a continuation line
+        fullLine += line[1..-1]
+      } else {
+        if (fullLine.size() > 0)  // we have collected something before
+          lines.add(fullLine)
+        fullLine = line
+      }
     }
-    if (lines.size() > 0) {
+    lines.add(fullLine)   // add last line
+    if (lines.size() > 0 && hasATGContent ) {
       // create new ATG module with lines from manifest
       String n = createModuleName(parentPath, modulePath)
       println "Got module MOD="+n
-      def module = new ATGModule(n, lines)
+      def module = new ATGModule(n, lines, true)
       moduleList[n] = module
     }
 
