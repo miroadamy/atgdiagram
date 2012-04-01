@@ -98,7 +98,7 @@ def processATGModule(String rootPath, String parentPath, String modulePath, modu
       // create new ATG module with lines from manifest
       String n = createModuleName(parentPath, modulePath)
       println "Got module MOD="+n
-      def module = new ATGModule(n, lines, true)
+      def module = new ATGModule(n, lines)
       moduleList[n] = module
     }
 
@@ -122,6 +122,39 @@ def createModuleName(String parentPath, String modulePath) {
   return name.replace('/','.');
 }
 
+def outputForPlant(mods, listOfIgnored) {
+  def pairs = [:]
+
+  mods.each {key, val ->
+    // key is module name
+    val.dependsOn().each { dep ->
+      String pair = "${key}|${dep}"
+      if (!pairs.containsKey(pair)) {
+        pairs[pair] = dep
+      }
+    }
+  }
+
+  println "@startuml"
+
+
+  Set<String> objects = []
+  pairs.each {key, val ->
+    def parts = key.tokenize('|')
+    if (parts[0] && !objects.contains(parts[0]))
+      objects.add(parts[0])
+      println "Object ${parts[0].replaceAll('-','_')}"
+  }
+
+
+  pairs.each {key, val ->
+    def parts = key.tokenize('|')
+    println "${parts[0].replaceAll('-','_')} <|-- ${parts[1]?.replaceAll('-','_')}"
+  }
+
+  println "@enduml"
+}
+
 def cliOptions = processArguments(args)
 
 if (validateATGRoot(atgROOT) == false) {
@@ -139,6 +172,8 @@ new File(atgROOT).eachFile { f ->
 }
 
 modules.each { key, val ->
-  println "Module ${key} => ${val.toString()}"
-
+  // println "Module ${key} => ${val.dependsOn()}"
 }
+
+
+outputForPlant(modules, [])
