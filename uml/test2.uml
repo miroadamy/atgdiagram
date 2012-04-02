@@ -1,0 +1,65 @@
+Using ATG_ROOT from environment variable $ATG_ROOT: /opt/ATG/ATG10.0.2
+Using /opt/ATG/ATG10.0.2 installation
+Dependants of module TWeStore.eStore => [DCS.Search.Query, B2CCommerce, DAF.Search.Query, DAF.Search.Base, DCS.Search.common, DPS.Search.Index, DAF.Search.common, DAS-UI, DCS.Search.Index, DPS, DCS, DCS.Search.CustomCatalogs, DCS.Search.CustomCatalogs.Query, DCS.Search.CustomCatalogs.Index, DAF.Search.Routing, DCS.Search.CustomCatalogs.common, DAF.Search.Index, DSS, DCS.CustomCatalogs, DAS]
+@startuml
+Object TWeStore_eStore
+Object DCS
+Object B2CCommerce
+Object DCS_Search_CustomCatalogs
+Object DAF_Search_Routing
+Object DCS_CustomCatalogs
+Object DPS
+Object DCS_Search_CustomCatalogs_Query
+Object DAF_Search_Base
+Object DCS_Search_CustomCatalogs_Index
+Object DSS
+Object DAS_UI
+Object DCS_Search_Query
+Object DCS_Search_CustomCatalogs_common
+Object DAS
+Object DCS_Search_Index
+Object DAF_Search_Query
+Object DCS_Search_common
+Object DPS_Search_Index
+Object DAF_Search_Index
+Object DAF_Search_common
+TWeStore_eStore <|-- DCS
+TWeStore_eStore <|-- DCS_CustomCatalogs
+TWeStore_eStore <|-- B2CCommerce
+TWeStore_eStore <|-- DCS_Search_CustomCatalogs
+TWeStore_eStore <|-- DAF_Search_Routing
+DCS <|-- DPS
+DCS <|-- DSS
+B2CCommerce <|-- DCS
+DCS_Search_CustomCatalogs <|-- DCS_Search_CustomCatalogs_Index
+DCS_Search_CustomCatalogs <|-- DCS_Search_CustomCatalogs_Query
+DAF_Search_Routing <|-- DAS_UI
+DAF_Search_Routing <|-- DAF_Search_Base
+DCS_CustomCatalogs <|-- DCS
+DPS <|-- DAS
+DCS_Search_CustomCatalogs_Query <|-- DCS_Search_Query
+DCS_Search_CustomCatalogs_Query <|-- DCS_Search_CustomCatalogs_common
+DAF_Search_Base <|-- DAS_UI
+DCS_Search_CustomCatalogs_Index <|-- DCS_Search_Index
+DCS_Search_CustomCatalogs_Index <|-- DCS_Search_CustomCatalogs_common
+DSS <|-- DPS
+DAS_UI <|-- DAS
+DCS_Search_Query <|-- DAF_Search_Query
+DCS_Search_Query <|-- DCS_Search_common
+DCS_Search_Query <|-- DCS
+DCS_Search_CustomCatalogs_common <|-- DCS_Search_common
+DCS_Search_CustomCatalogs_common <|-- DCS_CustomCatalogs
+DCS_Search_Index <|-- DPS_Search_Index
+DCS_Search_Index <|-- DCS_Search_common
+DCS_Search_Index <|-- DCS
+DAF_Search_Query <|-- DAF_Search_common
+DCS_Search_common <|-- DAF_Search_common
+DCS_Search_common <|-- DCS
+DPS_Search_Index <|-- DPS
+DPS_Search_Index <|-- DAF_Search_Index
+DAF_Search_Index <|-- DAS_UI
+DAF_Search_Index <|-- DAF_Search_Base
+DAF_Search_common <|-- DAS_UI
+DAF_Search_common <|-- DAF_Search_Base
+DAF_Search_common <|-- DAF_Search_Routing
+@enduml

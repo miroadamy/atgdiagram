@@ -9,29 +9,29 @@ modules = [:]
 
 
 def processArguments(args) {
-  def cli = new CliBuilder(usage: 'listATGModules.groovy -[ha] ')
+  def cli = new CliBuilder(usage: 'groovy listATGModules.groovy')
   def env = System.getenv()
   // Create the list of options.
   cli.with {
     h longOpt: 'help', 'Show usage information'
     e longOpt: 'env', 'Use environment variable ATG_ROOT'
     d longOpt: 'debug', 'Provide extra debug information'
-    a longOpt: 'atg-root', args: 1, argName: 'atgRoot', 'Installation directory of the ATG - full path that contains DAS subdirectory'
+    a longOpt: 'list-all', 'List all modules'
+    p longOpt: 'gen-plantuml', 'Generate PlantUML format'
+    m longOpt: 'mod-dep', args: 1, argName: 'module', 'Show recursive dependencies of a module and UM diagram for it'
+    r longOpt: 'atg-root', args: 1, argName: 'atgRoot', 'Installation directory of the ATG - full path that contains DAS subdirectory'
   }
 
   def options = cli.parse(args)
-  if (!options) {
-    println 'No options'
-    return
-  }
+
   // Show usage text when -h or --help option is used.
-  if (options.h) {
+  if (!options || options.h || options.options == 0) {
     cli.usage()
-    return
+    System.exit(1)
   }
 
   if (options.'atg-root') {
-    atgROOT = options.a
+    atgROOT = options.r
     println "Using ATG_ROOT from command line: ${atgROOT}"
   } else if (options.e) {
     if (env['ATG_ROOT']) {
@@ -40,12 +40,12 @@ def processArguments(args) {
     } else {
       println "Cannot determine ATG installation directory from environment - please set ATG_ROOT environment variable"
       cli.usage()
-      return
+      System.exit(1)
     }
   } else {
     println "Cannot determine ATG installation directory "
     cli.usage()
-    return
+    System.exit(1)
   }
   // Handle all non-option arguments.
   def extraArguments = options.arguments()
@@ -66,6 +66,11 @@ def validateATGRoot(atgroot) {
       return true
   }
   return false
+}
+
+
+def goodGraphName(String s) {
+   return s?.replaceAll('-','_')?.replaceAll(/\./, '_')
 }
 
 def processATGModule(String rootPath, String parentPath, String modulePath, moduleList, boolean debug = false) {
@@ -97,8 +102,9 @@ def processATGModule(String rootPath, String parentPath, String modulePath, modu
     if (lines.size() > 0 && hasATGContent ) {
       // create new ATG module with lines from manifest
       String n = createModuleName(parentPath, modulePath)
-      println "Got module MOD="+n
-      def module = new ATGModule(n, lines)
+      if (debug)
+        println "Got module MOD="+n
+      def module = new ATGModule(n, lines, debug)
       moduleList[n] = module
     }
 
@@ -125,8 +131,11 @@ def createModuleName(String parentPath, String modulePath) {
 def outputForPlant(mods, listOfIgnored) {
   def pairs = [:]
 
+  println "@startuml"
   mods.each {key, val ->
     // key is module name
+    println "Object ${goodGraphName(key)}"
+
     val.dependsOn().each { dep ->
       String pair = "${key}|${dep}"
       if (!pairs.containsKey(pair)) {
@@ -135,21 +144,9 @@ def outputForPlant(mods, listOfIgnored) {
     }
   }
 
-  println "@startuml"
-
-
-  Set<String> objects = []
   pairs.each {key, val ->
     def parts = key.tokenize('|')
-    if (parts[0] && !objects.contains(parts[0]))
-      objects.add(parts[0])
-      println "Object ${parts[0].replaceAll('-','_')}"
-  }
-
-
-  pairs.each {key, val ->
-    def parts = key.tokenize('|')
-    println "${parts[0].replaceAll('-','_')} <|-- ${parts[1]?.replaceAll('-','_')}"
+    println "${goodGraphName(parts[0])} <|-- ${goodGraphName(parts[1])}"
   }
 
   println "@enduml"
@@ -158,7 +155,7 @@ def outputForPlant(mods, listOfIgnored) {
 def cliOptions = processArguments(args)
 
 if (validateATGRoot(atgROOT) == false) {
-  println "The ${atgROOT} does not seem to be a valid ATG installation"
+  println "The \'${atgROOT}\' does not seem to be a valid ATG installation"
   return 1;
 }
 println "Using ${atgROOT} installation"
@@ -166,14 +163,56 @@ println "Using ${atgROOT} installation"
 
 new File(atgROOT).eachFile { f ->
   if (f.isDirectory()) {
-    println "\nProcessing ${f.canonicalPath}"
-    processATGModule(atgROOT, ".", f.name, modules, cliOptions.d)
+    processATGModule(atgROOT, ".", f.name, modules, cliOptions.d == true)
   }
 }
 
-modules.each { key, val ->
-  // println "Module ${key} => ${val.dependsOn()}"
+if (cliOptions.a) {
+  modules.each { key, val ->
+    println "${key} => ${val.dependsOn()}"
+  }
+  return 0;
 }
 
 
-outputForPlant(modules, [])
+if (cliOptions.p) {
+  outputForPlant(modules, [])
+  return 0;
+}
+
+if (cliOptions.m) {
+  def key = cliOptions.m
+
+  if (modules.containsKey(key)) {
+    // get the direct dependencies
+    def mods = [:]
+    Set<String> deps = modules[key].dependsOn()
+    Set<String> added = modules[key].dependsOn()
+
+    mods[key] = modules[key]
+    while (added.size() > 0) {
+        Set<String> toCheck = new HashSet<String>();
+        toCheck.addAll(added)
+        added.clear()
+        toCheck.each { mod ->
+          // get the deps
+          mods[mod] = modules[mod]
+          Set<String> modDeps = modules[mod].dependsOn()
+          modDeps.each { dependant ->
+            if (!deps.contains(dependant)) {
+              added.add(dependant)
+              deps.add(dependant)
+            }
+          }
+        }
+    }
+
+    println "Dependants of module ${key} => ${deps}"
+    outputForPlant(mods, null)
+
+  } else {
+    println "No information about ${key} in ${atgROOT}"
+    return 1
+  }
+
+}
